@@ -7,25 +7,39 @@ import (
 	_ "github.com/lib/pq"
 )
 
+func Fetch (d,h,u,p,db,q string) (json string,err error) {
+	c,err := connect(d,h,u,p,db)
+	if err != nil {
+		return "",err
+	} else {
+		j,err := getData(c,q) 
+		if err != nil {
+			return "",err
+		} else {
+			return j,nil
+		}
+	}
+}
+
 // Connects to the specified database using the driver (d), user (u)
 // password (p), host(h), and database (db).
 // @TODO - Unit test
-func connect(d,h,u,p,db string) (db *sql.DB, error) {
-
-	if d == 'mysql' {
-		db, err := sql.Open(d, *u+":"+*p+"@tcp("+*h+":3306)/"+*db+"?allowOldPasswords=1")
+func connect(d,h,u,p,db string) (c *sql.DB,err error) {
+	if d == "mysql" {
+		c, err = sql.Open(d, u+":"+p+"@tcp("+h+":3306)/"+db+"?allowOldPasswords=1")
 	} else {
-		db, err := sql.Open(d, "postgres://"+u+":"+p+"@"+h+"/"+db+"?sslmode=verify-full")
+		//c, err = sql.Open(d, "postgres://"+u+":"+p+"@"+h+"/"+db+"?sslmode=verify-full")
+		c, err = sql.Open(d, "postgres://"+u+":"+p+"@"+h+"/"+db)
 	}
+	
 	if err != nil {
 		return nil,err
 	} else {
-		return db,nil
+		//defer c.Close()
+		return c,nil
 	}
 
-	defer db.Close()
 }
-
 
 // Function used to get a bran fromthe database using the supplied brand name
 // Function used to gat data from the connected database source. If connected
@@ -59,7 +73,7 @@ func getData(db *sql.DB, query string) (string, error) {
 		}
 		records.Scan(vals...)
 		entry := make(map[string]interface{})
-		for i, column := range columns {
+		for i, column := range cols {
 			var v interface{}
 			datum := data[i]
 			b, ok := datum.([]byte)
